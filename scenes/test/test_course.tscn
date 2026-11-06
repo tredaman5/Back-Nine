@@ -1,9 +1,10 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/holes/hole_test.tscn" id="1_hole"]
 [ext_resource type="PackedScene" path="res://scenes/ball/ball.tscn" id="2_ball"]
 [ext_resource type="Script" path="res://scripts/debug/ball_debug_launcher.gd" id="3_dbg"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="4_player"]
+[ext_resource type="PackedScene" path="res://scenes/camera/camera_rig.tscn" id="5_cam"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 
@@ -27,9 +28,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
 rotation_degrees = Vector3(-50, -30, 0)
 shadow_enabled = true
 
-[node name="TempCamera" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.985, 0.174, 0, -0.174, 0.985, 0, 6, 18)
-current = true
+[node name="CameraRig" parent="." instance=ExtResource("5_cam")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 18)
 
 [node name="Player" parent="." instance=ExtResource("4_player")]
 
@@ -37,7 +37,7 @@ current = true
 script = ExtResource("3_dbg")
 ball_scene = ExtResource("2_ball")
 tee_path = NodePath("../Hole/Tee")
-camera_path = NodePath("../TempCamera")
+camera_path = NodePath("../CameraRig")
 cup_path = NodePath("../Hole/Cup")
 oob_path = NodePath("../Hole/OutOfBounds")
 player_path = NodePath("../Player")

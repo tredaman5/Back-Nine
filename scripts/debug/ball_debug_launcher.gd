@@ -1,6 +1,6 @@
 extends Node
 ## TEMPORARY test harness for the player and ball. Replaced by MatchManager and the real HUD later.
-## Spawns the ball, hooks up the swing meter, shows results, and handles out-of-bounds / holed.
+## Spawns the ball, hooks up the swing meter and camera, shows results, and handles out-of-bounds / holed.
 ## R = reset to tee.
 
 @export var ball_scene: PackedScene
@@ -14,13 +14,12 @@ var _ball: BallPhysics
 var _tee: Marker3D
 var _cup: CupDetector
 var _oob: OOBDetector
-var _camera: Camera3D
+var _camera: CameraRig
 var _input: PlayerInput
 var _aim: ShotAim
 var _swing: SwingController
 var _label: Label
 var _result: String = ""
-var _follow: bool = false
 var _rest_position: Vector3 = Vector3.ZERO
 
 
@@ -28,7 +27,7 @@ func _ready() -> void:
 	_tee = get_node(tee_path) as Marker3D
 	_cup = get_node(cup_path) as CupDetector
 	_oob = get_node(oob_path) as OOBDetector
-	_camera = get_node(camera_path) as Camera3D
+	_camera = get_node(camera_path) as CameraRig
 	var player: Node = get_node(player_path)
 	_input = player.get_node("PlayerInput") as PlayerInput
 	_aim = player.get_node("ShotAim") as ShotAim
@@ -46,6 +45,7 @@ func _ready() -> void:
 	_aim.set_ball(_ball)
 	_swing.set_ball(_ball)
 	_reset_ball(_tee.global_position + Vector3(0, 0.25, 0))
+	_camera.bind(_ball, _aim, _swing, _input)
 
 	var layer := CanvasLayer.new()
 	var meter := SwingMeter.new()
@@ -67,16 +67,14 @@ func _reset_ball(pos: Vector3) -> void:
 	_ball.teleport(pos)
 	_rest_position = pos
 	_swing.reset()
-	_follow = false
 	_result = ""
-	_camera.global_position = pos + Vector3(0, 6, 18)
-	_camera.rotation_degrees = Vector3(-10, 0, 0)
 	_aim.aim_at(_cup.global_position)
+	if _camera != null:
+		_camera.snap_to_tee()
 
 
 func _on_shot_taken(_golfer: Node) -> void:
 	_result = "In flight..."
-	_follow = true
 
 
 func _on_swing_resolved(r: Dictionary) -> void:
@@ -108,11 +106,9 @@ func _on_oob() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _follow:
-		_camera.global_position = _ball.global_position + Vector3(0, 6, 18)
-		_camera.look_at(_ball.global_position + Vector3(0, 0, -20))
 	if _label != null:
 		var club: Club = _input.current_club()
 		var to_pin: float = Vector2(_ball.global_position.x - _cup.global_position.x, _ball.global_position.z - _cup.global_position.z).length()
-		_label.text = "%s (%.0f yd)  |  %s  |  aim %.0f deg left  |  pin %.0f yd\n%s\n[hold LMB + drag down] power, release  >  [LMB] stop marker in green    [R] reset  [Q/E] club  [1-3] shape" % [
-			club.display_name, club.range_yards(), _input.current_shape(), _aim.yaw_deg, to_pin, _result]
+		_label.text = "%s (%.0f yd)  |  %s  |  aim %.0f deg left  |  pin %.0f yd  |  cam %s\n%s\n[hold LMB + drag down] power, release  >  [LMB] stop marker in green    [R] reset  [Q/E] club  [1-3] shape" % [
+			club.display_name, club.range_yards(), _input.current_shape(), _aim.yaw_deg, to_pin,
+			CameraRig.Mode.keys()[_camera.mode], _result]
