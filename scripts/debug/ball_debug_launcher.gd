@@ -1,9 +1,10 @@
 extends Node
-## TEMPORARY test harness for the player and ball. Replaced by MatchManager and the real HUD later.
-## Spawns the ball, hooks up the swing meter and camera, shows results, and handles out-of-bounds / holed.
+## TEMPORARY test harness for the player and ball. Replaced by MatchManager later.
+## Spawns the ball and HUD, hooks up the camera, shows shot results, and handles out-of-bounds / holed.
 ## R = reset to tee.
 
 @export var ball_scene: PackedScene
+@export var hud_scene: PackedScene
 @export var tee_path: NodePath
 @export var cup_path: NodePath
 @export var oob_path: NodePath
@@ -15,10 +16,9 @@ var _tee: Marker3D
 var _cup: CupDetector
 var _oob: OOBDetector
 var _camera: CameraRig
-var _input: PlayerInput
+var _hud: HUDController
 var _aim: ShotAim
 var _swing: SwingController
-var _label: Label
 var _result: String = ""
 var _rest_position: Vector3 = Vector3.ZERO
 
@@ -29,7 +29,7 @@ func _ready() -> void:
 	_oob = get_node(oob_path) as OOBDetector
 	_camera = get_node(camera_path) as CameraRig
 	var player: Node = get_node(player_path)
-	_input = player.get_node("PlayerInput") as PlayerInput
+	var input := player.get_node("PlayerInput") as PlayerInput
 	_aim = player.get_node("ShotAim") as ShotAim
 	_swing = player.get_node("SwingController") as SwingController
 
@@ -45,16 +45,11 @@ func _ready() -> void:
 	_aim.set_ball(_ball)
 	_swing.set_ball(_ball)
 	_reset_ball(_tee.global_position + Vector3(0, 0.25, 0))
-	_camera.bind(_ball, _aim, _swing, _input)
+	_camera.bind(_ball, _aim, _swing, input)
 
-	var layer := CanvasLayer.new()
-	var meter := SwingMeter.new()
-	meter.bind(_swing)
-	layer.add_child(meter)
-	_label = Label.new()
-	_label.position = Vector2(16, 12)
-	layer.add_child(_label)
-	add_child(layer)
+	_hud = hud_scene.instantiate() as HUDController
+	add_child(_hud)
+	_hud.bind(input, _aim, _swing, _ball, _cup)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -67,48 +62,45 @@ func _reset_ball(pos: Vector3) -> void:
 	_ball.teleport(pos)
 	_rest_position = pos
 	_swing.reset()
-	_result = ""
 	_aim.aim_at(_cup.global_position)
+	_set_result("")
 	if _camera != null:
 		_camera.snap_to_tee()
 
 
+func _set_result(text: String) -> void:
+	_result = text
+	if _hud != null:
+		_hud.set_result(text)
+
+
 func _on_shot_taken(_golfer: Node) -> void:
-	_result = "In flight..."
+	_set_result("In flight...")
 
 
 func _on_swing_resolved(r: Dictionary) -> void:
 	var how: String = "perfect" if r["centered"] else ("in window" if r["in_window"] else ("SLICE" if r["error"] > 0.0 else "HOOK"))
-	_result = "Power %.0f%%  |  %s" % [r["power"] * 100.0, how]
+	_set_result("Power %.0f%%  |  %s" % [r["power"] * 100.0, how])
 
 
 func _on_landed(surface: StringName) -> void:
-	_result += "\nCarry %.1f yd (landed on %s)" % [_ball.carry_distance(), surface]
+	_set_result(_result + "\nCarry %.1f yd (landed on %s)" % [_ball.carry_distance(), surface])
 
 
 func _on_stopped() -> void:
-	_result += "\nStopped: total %.1f yd" % _ball.total_distance()
+	_set_result(_result + "\nStopped: total %.1f yd" % _ball.total_distance())
 	_rest_position = _ball.global_position
 	_aim.aim_at(_cup.global_position)
 
 
 func _on_holed() -> void:
-	_result += "\nHOLED!"
+	_set_result(_result + "\nHOLED!")
 	await get_tree().create_timer(2.0).timeout
 	_reset_ball(_tee.global_position + Vector3(0, 0.25, 0))
 	_cup.reset()
 
 
 func _on_oob() -> void:
-	_result += "\nOut of bounds (+1 stroke). Replacing ball."
+	_set_result(_result + "\nOut of bounds (+1 stroke). Replacing ball.")
 	await get_tree().create_timer(1.5).timeout
 	_reset_ball(_rest_position)
-
-
-func _process(_delta: float) -> void:
-	if _label != null:
-		var club: Club = _input.current_club()
-		var to_pin: float = Vector2(_ball.global_position.x - _cup.global_position.x, _ball.global_position.z - _cup.global_position.z).length()
-		_label.text = "%s (%.0f yd)  |  %s  |  aim %.0f deg left  |  pin %.0f yd  |  cam %s\n%s\n[hold LMB + drag down] power, release  >  [LMB] stop marker in green    [R] reset  [Q/E] club  [1-3] shape" % [
-			club.display_name, club.range_yards(), _input.current_shape(), _aim.yaw_deg, to_pin,
-			CameraRig.Mode.keys()[_camera.mode], _result]

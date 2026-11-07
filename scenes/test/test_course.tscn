@@ -1,10 +1,11 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/holes/hole_test.tscn" id="1_hole"]
 [ext_resource type="PackedScene" path="res://scenes/ball/ball.tscn" id="2_ball"]
 [ext_resource type="Script" path="res://scripts/debug/ball_debug_launcher.gd" id="3_dbg"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="4_player"]
 [ext_resource type="PackedScene" path="res://scenes/camera/camera_rig.tscn" id="5_cam"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="6_hud"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 
@@ -36,6 +37,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 18)
 [node name="BallDebug" type="Node" parent="."]
 script = ExtResource("3_dbg")
 ball_scene = ExtResource("2_ball")
+hud_scene = ExtResource("6_hud")
 tee_path = NodePath("../Hole/Tee")
 camera_path = NodePath("../CameraRig")
 cup_path = NodePath("../Hole/Cup")
