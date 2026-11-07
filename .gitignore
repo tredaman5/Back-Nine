@@ -21,3 +21,4 @@ export_credentials.cfg
 .vscode/
 .idea/
 *.swp
+CLAUDE.md
