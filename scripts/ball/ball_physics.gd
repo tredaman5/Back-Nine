@@ -17,6 +17,8 @@ const SPIN_DECAY: float = 0.15
 const STOP_SPEED: float = 0.4
 ## Time after launch during which ground contact is ignored (stale contacts from the tee).
 const LAUNCH_GRACE: float = 0.15
+## Extra roll (yards) added to putt speed to make up for the engine's friction.
+const PUTT_FRICTION_COMP: float = 5.0
 
 ## Roll deceleration on each surface (units/s^2).
 const ROLL_DECEL: Dictionary[StringName, float] = {
@@ -142,6 +144,13 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if h_speed > 0.0:
 		horizontal *= new_h / h_speed
 	state.linear_velocity = Vector3(horizontal.x, v.y, horizontal.z)
+
+
+## Launch speed for a putt that should roll `roll_yards` on `surface`. The engine's own friction
+## eats about PUTT_FRICTION_COMP yards, so aim a bit long (calibrated by test).
+static func launch_speed_for_putt(roll_yards: float, surface: StringName) -> float:
+	var decel: float = ROLL_DECEL.get(surface, 14.0)
+	return sqrt(2.0 * decel * (roll_yards + minf(roll_yards, PUTT_FRICTION_COMP)))
 
 
 ## Launch speed (units/s) that produces `carry` yards of flight on flat ground at `loft_deg`,

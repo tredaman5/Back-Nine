@@ -31,12 +31,7 @@ var unlocked_shapes: Dictionary[StringName, bool] = {
 
 
 func _ready() -> void:
-	clubs = [
-		Club.make("Driver", 250.0, 12.0),
-		Club.make("7 Iron", 160.0, 28.0),
-		Club.make("Wedge", 90.0, 48.0),
-		Club.make("Putter", 0.0, 0.0, true),
-	]
+	clubs = Club.standard_bag()
 
 
 func current_club() -> Club:

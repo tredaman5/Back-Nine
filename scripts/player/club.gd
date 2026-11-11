@@ -16,6 +16,17 @@ func range_yards() -> float:
 	return putt_range_yards if is_putter else carry_yards
 
 
+## The bag everyone plays with: Driver, 7 Iron, Wedge, Putter.
+static func standard_bag() -> Array[Club]:
+	var bag: Array[Club] = [
+		Club.make("Driver", 250.0, 12.0),
+		Club.make("7 Iron", 160.0, 28.0),
+		Club.make("Wedge", 90.0, 48.0),
+		Club.make("Putter", 0.0, 0.0, true),
+	]
+	return bag
+
+
 static func make(p_name: String, p_carry: float, p_loft: float, p_putter: bool = false) -> Club:
 	var c := Club.new()
 	c.display_name = p_name

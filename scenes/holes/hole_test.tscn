@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/hole/cup_detector.gd" id="1_cup"]
 [ext_resource type="Script" path="res://scripts/hole/oob_detector.gd" id="2_oob"]
+[ext_resource type="Script" path="res://scripts/hole/hole.gd" id="3_hole"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_rough"]
 albedo_color = Color(0.22, 0.42, 0.18, 1)
@@ -70,6 +71,9 @@ size = Vector3(1, 0.04, 1)
 size = Vector3(800, 2, 900)
 
 [node name="HoleTest" type="Node3D"]
+script = ExtResource("3_hole")
+points = 1
+hole_number = 1
 
 [node name="Terrain" type="Node3D" parent="."]
 

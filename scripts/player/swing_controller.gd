@@ -16,7 +16,6 @@ signal shot_taken(golfer: Node)
 
 const DRAW_SIDESPIN: float = 250.0
 const HIGH_LOB_EXTRA_LOFT: float = 15.0
-const PUTT_FRICTION_COMP: float = 5.0
 ## Power multiplier by lie (rough -20%, sand -40%).
 const LIE_POWER: Dictionary[StringName, float] = {
 	&"rough": 0.8,
@@ -76,11 +75,10 @@ func window_half_width() -> float:
 	return half
 
 
-## Back to idle and ready for the next shot.
+## Back to idle and ready for the next shot. Whether input is live is up to the turn order (Player).
 func reset() -> void:
 	power = 0.0
 	marker = 0.0
-	_input.enabled = true
 	_set_state(State.IDLE)
 
 
@@ -146,10 +144,7 @@ func _fire() -> void:
 	if club.is_putter:
 		# Direction error instead of spin. Late = right.
 		dir = dir.rotated(Vector3.UP, deg_to_rad(-error * miss_putt_yaw_deg))
-		var decel: float = BallPhysics.ROLL_DECEL.get(surface, 14.0)
-		var roll: float = club.putt_range_yards * eff_power
-		# The engine's own friction eats about 5 yd of roll, so aim a bit long (calibrated by test).
-		speed = sqrt(2.0 * decel * (roll + minf(roll, PUTT_FRICTION_COMP)))
+		speed = BallPhysics.launch_speed_for_putt(club.putt_range_yards * eff_power, surface)
 	else:
 		match shape:
 			&"draw":
