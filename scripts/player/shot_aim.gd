@@ -8,15 +8,17 @@ signal aim_changed(yaw_deg: float)
 const LINE_SHADER: Shader = preload("res://assets/shaders/aim_line.gdshader")
 
 @export var player_input_path: NodePath = ^"../PlayerInput"
-@export var max_yaw_deg: float = 75.0
-## Turn rate for keyboard / stick, degrees per second.
+## Turn rate for keyboard / stick, degrees per second. The aim turns a full 360 degrees.
 @export var turn_speed_deg: float = 60.0
-## Mouse at the screen edge aims this many degrees off center.
+## Mouse at the screen edge aims this many degrees off the direction to the pin.
 @export var mouse_range_deg: float = 45.0
 @export var line_width: float = 0.5
 
 var yaw_deg: float = 0.0
 
+## Yaw that points at the pin (set by aim_at). The mouse sweeps around it, so a ball that
+## ended up past the pin can still aim back toward it.
+var _base_yaw_deg: float = 0.0
 var _input: PlayerInput
 var _ball: BallPhysics
 var _line: MeshInstance3D
@@ -50,11 +52,13 @@ func aim_at(point: Vector3) -> void:
 	if _ball == null:
 		return
 	var d: Vector3 = point - _ball.global_position
-	set_yaw(rad_to_deg(atan2(-d.x, -d.z)))
+	_base_yaw_deg = rad_to_deg(atan2(-d.x, -d.z))
+	set_yaw(_base_yaw_deg)
 
 
+## Any angle works; it wraps to -180..180.
 func set_yaw(deg: float) -> void:
-	yaw_deg = clampf(deg, -max_yaw_deg, max_yaw_deg)
+	yaw_deg = wrapf(deg, -180.0, 180.0)
 	rotation.y = deg_to_rad(yaw_deg)
 	aim_changed.emit(yaw_deg)
 
@@ -72,7 +76,7 @@ func _process(delta: float) -> void:
 
 
 func _on_mouse_aimed(norm_x: float) -> void:
-	set_yaw(-norm_x * mouse_range_deg)
+	set_yaw(_base_yaw_deg - norm_x * mouse_range_deg)
 
 
 func _on_club_changed(club: Club) -> void:
