@@ -34,8 +34,8 @@ signal mode_changed(new_mode: Mode)
 
 var mode: Mode = Mode.TEE
 
+var _subject: Golfer
 var _ball: BallPhysics
-var _aim: ShotAim
 var _putting: bool = false
 var _flight_dir: Vector3 = Vector3(0.0, 0.0, -1.0)
 var _look: Vector3 = Vector3.ZERO
@@ -48,21 +48,27 @@ func _ready() -> void:
 		listener.make_current()
 
 
-## Connect to the nodes whose signals drive the camera.
-func bind(ball: BallPhysics, aim: ShotAim, swing: SwingController, input: PlayerInput) -> void:
-	_ball = ball
-	_aim = aim
-	swing.shot_taken.connect(_on_shot_taken)
-	ball.ball_landed.connect(_on_ball_landed)
-	ball.ball_stopped.connect(_on_ball_stopped)
-	input.club_changed.connect(_on_club_changed)
-	_putting = input.current_club().is_putter
+## Follow this golfer (and their ball) from now on, with a hard cut to their tee/putting view.
+## MatchManager calls this at the start of every turn.
+func set_subject(golfer: Golfer) -> void:
+	if _subject != null:
+		_subject.shot_taken.disconnect(_on_shot_taken)
+		_subject.putting_changed.disconnect(_on_putting_changed)
+		_ball.ball_landed.disconnect(_on_ball_landed)
+		_ball.ball_stopped.disconnect(_on_ball_stopped)
+	_subject = golfer
+	_ball = golfer.ball
+	_subject.shot_taken.connect(_on_shot_taken)
+	_subject.putting_changed.connect(_on_putting_changed)
+	_ball.ball_landed.connect(_on_ball_landed)
+	_ball.ball_stopped.connect(_on_ball_stopped)
+	_putting = golfer.is_putting()
 	snap_to_tee()
 
 
 ## Hard cut to the tee/putting view (new turn, ball replaced, etc.).
 func snap_to_tee() -> void:
-	if _ball == null:
+	if _subject == null:
 		return
 	_set_mode(Mode.PUTTING if _putting else Mode.TEE)
 	global_position = _tee_goal()
@@ -71,7 +77,7 @@ func snap_to_tee() -> void:
 
 
 func _process(delta: float) -> void:
-	if _ball == null:
+	if _subject == null:
 		return
 	match mode:
 		Mode.TEE, Mode.PUTTING:
@@ -93,14 +99,14 @@ func _process(delta: float) -> void:
 
 
 func _tee_goal() -> Vector3:
-	var dir: Vector3 = _aim.get_direction()
+	var dir: Vector3 = _subject.aim_direction()
 	var dist: float = putt_distance if _putting else tee_distance
 	var height: float = putt_height if _putting else tee_height
 	return _ball.global_position - dir * dist + Vector3.UP * height
 
 
 func _tee_target() -> Vector3:
-	var dir: Vector3 = _aim.get_direction()
+	var dir: Vector3 = _subject.aim_direction()
 	var ahead: float = putt_look_ahead if _putting else tee_look_ahead
 	return _ball.global_position + dir * ahead
 
@@ -118,8 +124,8 @@ func _set_mode(new_mode: Mode) -> void:
 	mode_changed.emit(new_mode)
 
 
-func _on_shot_taken(_golfer: Node) -> void:
-	_flight_dir = _aim.get_direction()
+func _on_shot_taken(_golfer: Golfer) -> void:
+	_flight_dir = _subject.aim_direction()
 	_set_mode(Mode.FOLLOW)
 
 
@@ -136,7 +142,7 @@ func _on_ball_stopped() -> void:
 	_set_mode(Mode.PUTTING if _putting else Mode.TEE)
 
 
-func _on_club_changed(club: Club) -> void:
-	_putting = club.is_putter
+func _on_putting_changed(putting: bool) -> void:
+	_putting = putting
 	if mode == Mode.TEE or mode == Mode.PUTTING:
 		_set_mode(Mode.PUTTING if _putting else Mode.TEE)

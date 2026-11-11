@@ -5,6 +5,7 @@ extends CanvasLayer
 
 const FEET_PER_YARD: float = 3.0
 
+@onready var _match_label: Label = %MatchLabel
 @onready var _club_label: Label = %ClubLabel
 @onready var _shape_label: Label = %ShapeLabel
 @onready var _power_label: Label = %PowerLabel
@@ -17,6 +18,9 @@ var _aim: ShotAim
 var _swing: SwingController
 var _ball: BallPhysics
 var _pin: Node3D
+var _manager: MatchManager
+var _hole: Hole
+var _turn_name: String = ""
 
 
 func bind(input: PlayerInput, aim: ShotAim, swing: SwingController, ball: BallPhysics, pin: Node3D) -> void:
@@ -28,6 +32,17 @@ func bind(input: PlayerInput, aim: ShotAim, swing: SwingController, ball: BallPh
 	_swing_meter.bind(swing)
 
 
+## Show whose turn it is and how far each golfer's ball is from the pin.
+func bind_match(manager: MatchManager, hole: Hole) -> void:
+	_manager = manager
+	_hole = hole
+	manager.turn_started.connect(_on_turn_started)
+
+
+func _on_turn_started(golfer: Golfer) -> void:
+	_turn_name = golfer.display_name
+
+
 ## Free text under the main readout (shot results, penalties). Debug use for now.
 func set_result(text: String) -> void:
 	_result_label.text = text
@@ -36,6 +51,11 @@ func set_result(text: String) -> void:
 func _process(_delta: float) -> void:
 	if _input == null:
 		return
+	if _manager != null:
+		var parts: PackedStringArray = []
+		for golfer: Golfer in _manager.golfers:
+			parts.append("%s %.0f yd" % [golfer.display_name, _hole.distance_to_pin(golfer.ball.global_position)])
+		_match_label.text = "Turn: %s   |   %s" % [_turn_name, "   ".join(parts)]
 	var club: Club = _input.current_club()
 	_club_label.text = "Club: %s (%.0f yd)" % [club.display_name, club.range_yards()]
 	_shape_label.text = "Shape: %s   Aim: %.0f deg %s" % [

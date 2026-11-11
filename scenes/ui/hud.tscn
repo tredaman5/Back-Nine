@@ -13,6 +13,12 @@ offset_right = 520.0
 offset_bottom = 170.0
 mouse_filter = 2
 
+[node name="MatchLabel" type="Label" parent="Info"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+text = "Match"
+
 [node name="ClubLabel" type="Label" parent="Info"]
 unique_name_in_owner = true
 layout_mode = 2

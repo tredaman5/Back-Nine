@@ -1,11 +1,13 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene format=3 uid="uid://cm6ll7hrgt38d"]
 
 [ext_resource type="PackedScene" path="res://scenes/holes/hole_test.tscn" id="1_hole"]
 [ext_resource type="PackedScene" path="res://scenes/ball/ball.tscn" id="2_ball"]
-[ext_resource type="Script" path="res://scripts/debug/ball_debug_launcher.gd" id="3_dbg"]
+[ext_resource type="Script" uid="uid://d0rv054ce6l6v" path="res://scripts/debug/match_debug.gd" id="3_dbg"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="4_player"]
 [ext_resource type="PackedScene" path="res://scenes/camera/camera_rig.tscn" id="5_cam"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://scenes/opponent/opponent.tscn" id="7_opp"]
+[ext_resource type="PackedScene" path="res://scenes/match/match_manager.tscn" id="8_mm"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 
@@ -17,29 +19,33 @@ background_mode = 2
 sky = SubResource("Sky_1")
 ambient_light_source = 3
 
-[node name="TestCourse" type="Node3D"]
+[node name="TestCourse" type="Node3D" unique_id=1825518978]
 
-[node name="Hole" parent="." instance=ExtResource("1_hole")]
+[node name="Hole" parent="." unique_id=338828693 instance=ExtResource("1_hole")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0053201914, 1.1920929e-07, 0.0025305748)
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=922777027]
 environment = SubResource("Env_1")
 
-[node name="Sun" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
-rotation_degrees = Vector3(-50, -30, 0)
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=892033621]
+transform = Transform3D(0.8660254, 0.38302222, -0.32139382, 0, 0.64278764, 0.76604444, 0.5, -0.66341394, 0.5566704, 0, 50, 0)
 shadow_enabled = true
 
-[node name="CameraRig" parent="." instance=ExtResource("5_cam")]
+[node name="CameraRig" parent="." unique_id=1894383843 instance=ExtResource("5_cam")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 18)
 
-[node name="Player" parent="." instance=ExtResource("4_player")]
+[node name="Player" parent="." unique_id=836036547 instance=ExtResource("4_player")]
 
-[node name="BallDebug" type="Node" parent="."]
-script = ExtResource("3_dbg")
+[node name="Opponent" parent="." unique_id=770536299 instance=ExtResource("7_opp")]
+
+[node name="MatchManager" parent="." unique_id=391563001 instance=ExtResource("8_mm")]
 ball_scene = ExtResource("2_ball")
-hud_scene = ExtResource("6_hud")
-tee_path = NodePath("../Hole/Tee")
+hole_path = NodePath("../Hole")
 camera_path = NodePath("../CameraRig")
-cup_path = NodePath("../Hole/Cup")
-oob_path = NodePath("../Hole/OutOfBounds")
+golfer_paths = Array[NodePath]([NodePath("../Player"), NodePath("../Opponent")])
+
+[node name="MatchDebug" type="Node" parent="." unique_id=22056656]
+script = ExtResource("3_dbg")
+hud_scene = ExtResource("6_hud")
+manager_path = NodePath("../MatchManager")
 player_path = NodePath("../Player")
