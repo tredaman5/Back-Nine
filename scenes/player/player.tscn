@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/player/shot_aim.gd" id="2_aim"]
 [ext_resource type="Script" path="res://scripts/player/swing_controller.gd" id="3_swing"]
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="4_player"]
+[ext_resource type="Script" path="res://scripts/player/green_reader.gd" id="5_reader"]
 
 [sub_resource type="CapsuleMesh" id="Mesh_body"]
 radius = 0.3
@@ -29,5 +30,8 @@ script = ExtResource("2_aim")
 
 [node name="SwingController" type="Node" parent="."]
 script = ExtResource("3_swing")
+
+[node name="GreenReader" type="Node" parent="."]
+script = ExtResource("5_reader")
 
 [node name="AimLine" type="MeshInstance3D" parent="ShotAim"]

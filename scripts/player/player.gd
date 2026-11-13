@@ -5,6 +5,7 @@ extends Golfer
 @onready var _input: PlayerInput = $PlayerInput
 @onready var _aim: ShotAim = $ShotAim
 @onready var _swing: SwingController = $SwingController
+@onready var _reader: GreenReader = $GreenReader
 
 
 func _ready() -> void:
@@ -16,6 +17,11 @@ func set_ball(new_ball: BallPhysics) -> void:
 	super(new_ball)
 	_aim.set_ball(new_ball)
 	_swing.set_ball(new_ball)
+
+
+func bind_match(manager: MatchManager) -> void:
+	super(manager)
+	manager.hole_started.connect(_reader.start_hole)
 
 
 func aim_direction() -> Vector3:
@@ -30,13 +36,16 @@ func begin_turn() -> void:
 	_swing.reset()
 	_input.enabled = true
 	_aim.aim_at(hole.pin_position())
+	_reader.begin_turn()
 
 
 func end_turn() -> void:
 	_input.enabled = false
+	_reader.end_turn()
 
 
 func _on_swing_shot_taken(_node: Node) -> void:
+	_reader.hide_grid()
 	shot_taken.emit(self)
 
 

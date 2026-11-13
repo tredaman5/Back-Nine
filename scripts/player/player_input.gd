@@ -10,6 +10,7 @@ signal mouse_aimed(norm_x: float)
 signal swing_pressed
 signal swing_released
 signal green_read_pressed
+signal green_read_released
 signal clutch_pressed
 signal caddie_call_pressed
 signal pause_pressed
@@ -84,6 +85,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		swing_released.emit()
 	elif event.is_action_pressed("green_read"):
 		green_read_pressed.emit()
+	elif event.is_action_released("green_read"):
+		green_read_released.emit()
 	elif event.is_action_pressed("clutch_shot"):
 		clutch_pressed.emit()
 	elif event.is_action_pressed("caddie_call"):

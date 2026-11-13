@@ -17,8 +17,11 @@ const SPIN_DECAY: float = 0.15
 const STOP_SPEED: float = 0.4
 ## Time after launch during which ground contact is ignored (stale contacts from the tee).
 const LAUNCH_GRACE: float = 0.15
-## Extra roll (yards) added to putt speed to make up for the engine's friction.
-const PUTT_FRICTION_COMP: float = 5.0
+## Putt calibration, fitted from measured putts on the green and fairway (see launch_speed_for_putt):
+## only this fraction of the launch energy is left once the engine's own friction has acted...
+const PUTT_ENERGY_KEEP: float = 0.42
+## ...and the ball rolls this many yards extra while it is still sliding.
+const PUTT_ROLL_OFFSET: float = 1.2
 
 ## Roll deceleration on each surface (units/s^2).
 const ROLL_DECEL: Dictionary[StringName, float] = {
@@ -37,6 +40,8 @@ const LANDING_KEEP: Dictionary[StringName, float] = {
 
 var spin: Vector3 = Vector3.ZERO
 var in_flight: bool = false
+## Callable(position: Vector3) -> Vector2: slope pull on the green. Unset = flat green.
+var green_slope: Callable = Callable()
 var launch_position: Vector3 = Vector3.ZERO
 var landing_position: Vector3 = Vector3.ZERO
 
@@ -139,6 +144,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			ball_stopped.emit.call_deferred()
 		return
 
+	# The green's slope pulls a rolling ball sideways (set by MatchManager from the hole).
+	if surface == &"green" and green_slope.is_valid():
+		var pull: Vector2 = green_slope.call(state.transform.origin)
+		horizontal += Vector3(pull.x, 0.0, pull.y) * dt
+		h_speed = horizontal.length()
+
 	var decel: float = ROLL_DECEL.get(surface, 14.0)
 	var new_h: float = maxf(h_speed - decel * dt, 0.0)
 	if h_speed > 0.0:
@@ -146,11 +157,14 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	state.linear_velocity = Vector3(horizontal.x, v.y, horizontal.z)
 
 
-## Launch speed for a putt that should roll `roll_yards` on `surface`. The engine's own friction
-## eats about PUTT_FRICTION_COMP yards, so aim a bit long (calibrated by test).
+## Launch speed for a putt that should roll `roll_yards` on `surface`.
+## The ball also loses speed to the physics engine's own friction, so the plain
+## v = sqrt(2 * decel * distance) rolls short. Measured: distance = KEEP * v^2 / (2 * decel) + OFFSET,
+## which is inverted here.
 static func launch_speed_for_putt(roll_yards: float, surface: StringName) -> float:
 	var decel: float = ROLL_DECEL.get(surface, 14.0)
-	return sqrt(2.0 * decel * (roll_yards + minf(roll_yards, PUTT_FRICTION_COMP)))
+	var net: float = maxf(roll_yards - PUTT_ROLL_OFFSET, 0.1)
+	return sqrt(2.0 * decel * net / PUTT_ENERGY_KEEP)
 
 
 ## Launch speed (units/s) that produces `carry` yards of flight on flat ground at `loft_deg`,
