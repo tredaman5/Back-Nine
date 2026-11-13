@@ -45,6 +45,8 @@ func _on_hole_started(hole: Hole) -> void:
 		golfer.ball.ball_stopped.connect(_on_stopped.bind(golfer))
 	hole.cup.ball_holed.connect(_on_holed)
 	hole.oob.out_of_bounds.connect(_on_oob)
+	_manager.scorer.hole_finished.connect(_on_hole_finished)
+	_manager.scorer.golfer_conceded.connect(_on_conceded)
 
 
 func _set_result(text: String) -> void:
@@ -82,4 +84,14 @@ func _on_holed() -> void:
 
 
 func _on_oob() -> void:
-	_set_result(_result + "\nOut of bounds. Replacing ball.")
+	_set_result(_result + "\nOut of bounds: +1 stroke. Replacing ball.")
+
+
+func _on_conceded(golfer: Golfer) -> void:
+	_set_result(_result + "\n%s used %d strokes and concedes the hole." % [golfer.display_name, MatchScorer.MAX_STROKES])
+
+
+func _on_hole_finished(r: Dictionary) -> void:
+	var winner: Golfer = r["winner"]
+	var text: String = "HOLE HALVED" if winner == null else "%s WINS THE HOLE (+%d)" % [winner.display_name, r["points"]]
+	_set_result(_result + "\n" + text)

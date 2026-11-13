@@ -1,6 +1,10 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/match/match_manager.gd" id="1_mm"]
+[ext_resource type="Script" path="res://scripts/match/match_scorer.gd" id="2_scorer"]
 
 [node name="MatchManager" type="Node"]
 script = ExtResource("1_mm")
+
+[node name="MatchScorer" type="Node" parent="."]
+script = ExtResource("2_scorer")

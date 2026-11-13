@@ -5,6 +5,7 @@ extends CanvasLayer
 
 const FEET_PER_YARD: float = 3.0
 
+@onready var _score_label: Label = %ScoreLabel
 @onready var _match_label: Label = %MatchLabel
 @onready var _club_label: Label = %ClubLabel
 @onready var _shape_label: Label = %ShapeLabel
@@ -53,9 +54,13 @@ func _process(_delta: float) -> void:
 		return
 	if _manager != null:
 		var parts: PackedStringArray = []
+		var score: PackedStringArray = []
 		for golfer: Golfer in _manager.golfers:
-			parts.append("%s %.0f yd" % [golfer.display_name, _hole.distance_to_pin(golfer.ball.global_position)])
+			var status: String = "holed" if _manager.scorer.is_holed(golfer) else ("conceded" if _manager.scorer.is_conceded(golfer) else "%.0f yd" % _hole.distance_to_pin(golfer.ball.global_position))
+			parts.append("%s %s, %d strokes" % [golfer.display_name, status, _manager.scorer.strokes_of(golfer)])
+			score.append("%s %d" % [golfer.display_name, _manager.scorer.points.get(golfer, 0)])
 		_match_label.text = "Turn: %s   |   %s" % [_turn_name, "   ".join(parts)]
+		_score_label.text = "Hole %d (%d pt)   Match: %s" % [_hole.hole_number, _hole.points, "   ".join(score)]
 	var club: Club = _input.current_club()
 	_club_label.text = "Club: %s (%.0f yd)" % [club.display_name, club.range_yards()]
 	_shape_label.text = "Shape: %s   Aim: %.0f deg %s" % [

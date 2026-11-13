@@ -2,7 +2,7 @@ class_name MatchManager
 extends Node
 ## The match referee. Runs the turn order for a hole: the golfer farthest from the cup plays next
 ## (ties go to the first golfer in the list, Dez). Spawns one ball per golfer.
-## Strokes, penalties and points come from MatchScorer in the next step.
+## Strokes, penalties and points are kept by its MatchScorer child.
 
 signal turn_started(golfer: Golfer)
 signal hole_started(hole: Hole)
@@ -24,8 +24,9 @@ var hole: Hole
 var golfers: Array[Golfer] = []
 var active: Golfer
 
+@onready var scorer: MatchScorer = $MatchScorer
+
 var _camera: CameraRig
-var _holed: Dictionary[Golfer, bool] = {}
 var _shot_pending: bool = false
 ## Bumped whenever a new turn or hole starts so stale timers know to give up.
 var _turn_id: int = 0
@@ -50,6 +51,7 @@ func _ready() -> void:
 
 	hole.cup.ball_holed.connect(_on_ball_holed)
 	hole.oob.out_of_bounds.connect(_on_out_of_bounds)
+	scorer.golfer_conceded.connect(_on_golfer_conceded)
 	await get_tree().process_frame
 	start_hole()
 
@@ -58,7 +60,6 @@ func _ready() -> void:
 func start_hole() -> void:
 	_turn_id += 1
 	var id: int = _turn_id
-	_holed.clear()
 	_shot_pending = false
 	for golfer: Golfer in golfers:
 		var spot: Vector3 = hole.tee_position() + TEE_DROP
@@ -78,6 +79,7 @@ func start_hole() -> void:
 		if i >= 1 and not still_in_cup:
 			break
 	hole.cup.reset()
+	scorer.begin_hole(hole, golfers)
 	hole_started.emit(hole)
 	_next_turn()
 
@@ -87,7 +89,7 @@ func _next_turn() -> void:
 	var next: Golfer = null
 	var farthest: float = -1.0
 	for golfer: Golfer in golfers:
-		if _holed.get(golfer, false):
+		if scorer.is_done(golfer):
 			continue
 		var dist: float = hole.distance_to_pin(golfer.ball.global_position)
 		if dist > farthest + 0.01:
@@ -113,12 +115,13 @@ func _finish_hole() -> void:
 	start_hole()
 
 
-func _end_shot(delay: float) -> void:
+func _end_shot(golfer: Golfer, delay: float) -> void:
 	_shot_pending = false
 	var id: int = _turn_id
 	await get_tree().create_timer(delay).timeout
 	if id != _turn_id:
 		return
+	scorer.resolve_shot(golfer)
 	_next_turn()
 
 
@@ -135,22 +138,29 @@ func _on_shot_taken(golfer: Golfer) -> void:
 
 
 func _on_ball_stopped(golfer: Golfer) -> void:
-	if golfer != active or not _shot_pending or _holed.get(golfer, false):
+	if golfer != active or not _shot_pending or scorer.is_done(golfer):
 		return
-	_end_shot(SHOT_END_DELAY)
+	_end_shot(golfer, SHOT_END_DELAY)
 
 
 func _on_ball_holed() -> void:
 	var golfer: Golfer = _golfer_of(hole.cup.last_ball)
-	if golfer == null or _holed.get(golfer, false):
+	if golfer == null:
 		return
-	_holed[golfer] = true
-	# Take the ball out of play: it is in the cup.
+	_remove_ball(golfer)
+	if golfer == active and _shot_pending:
+		_end_shot(golfer, HOLED_DELAY)
+
+
+func _on_golfer_conceded(golfer: Golfer) -> void:
+	_remove_ball(golfer)
+
+
+## Take a ball out of play (it is in the cup, or its golfer conceded the hole).
+func _remove_ball(golfer: Golfer) -> void:
 	golfer.ball.freeze = true
 	golfer.ball.visible = false
 	golfer.ball.in_flight = false
-	if golfer == active and _shot_pending:
-		_end_shot(HOLED_DELAY)
 
 
 func _on_out_of_bounds() -> void:
@@ -162,10 +172,11 @@ func _on_out_of_bounds() -> void:
 	await get_tree().create_timer(OOB_DELAY).timeout
 	if id != _turn_id:
 		return
-	# Replace the ball where it was hit from. The stroke penalty comes with MatchScorer.
+	# Replace the ball where it was hit from (MatchScorer adds the stroke penalty).
 	golfer.ball.teleport(golfer.rest_position)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	if id != _turn_id:
 		return
+	scorer.resolve_shot(golfer)
 	_next_turn()
