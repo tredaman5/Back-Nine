@@ -5,6 +5,7 @@ extends CanvasLayer
 
 const FEET_PER_YARD: float = 3.0
 
+@onready var _reads_label: Label = %ReadsLabel
 @onready var _score_label: Label = %ScoreLabel
 @onready var _match_label: Label = %MatchLabel
 @onready var _club_label: Label = %ClubLabel
@@ -38,6 +39,16 @@ func bind_match(manager: MatchManager, hole: Hole) -> void:
 	_manager = manager
 	_hole = hole
 	manager.turn_started.connect(_on_turn_started)
+
+
+## Show how many green reads are left this hole.
+func bind_reader(reader: GreenReader) -> void:
+	reader.reads_changed.connect(_on_reads_changed)
+	_on_reads_changed(reader.reads_left)
+
+
+func _on_reads_changed(reads_left: int) -> void:
+	_reads_label.text = "Green reads: %d / %d  (hold Shift)" % [reads_left, GreenReader.MAX_READS]
 
 
 func _on_turn_started(golfer: Golfer) -> void:

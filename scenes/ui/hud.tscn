@@ -19,6 +19,12 @@ layout_mode = 2
 mouse_filter = 2
 text = "Score"
 
+[node name="ReadsLabel" type="Label" parent="Info"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+text = "Green reads"
+
 [node name="MatchLabel" type="Label" parent="Info"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -60,7 +66,7 @@ offset_top = 680.0
 offset_right = 1260.0
 offset_bottom = 710.0
 mouse_filter = 2
-text = "Hold LMB + drag down: power. Release, then LMB: stop the marker in the green.   Q/E club   1-3 shape   mouse/arrows aim   R reset"
+text = "Hold LMB + drag down: power. Release, then LMB: stop the marker in the green.   Q/E club   1-3 shape   mouse/arrows aim   Shift (hold): green read   R reset"
 
 [node name="SwingMeter" type="Control" parent="."]
 mouse_filter = 2

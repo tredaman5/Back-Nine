@@ -43,6 +43,7 @@ func _ready() -> void:
 	for golfer: Golfer in golfers:
 		var ball := ball_scene.instantiate() as BallPhysics
 		get_parent().add_child(ball)
+		ball.green_slope = hole.green_slope_at
 		golfer.set_ball(ball)
 		golfer.hole = hole
 		golfer.bind_match(self)

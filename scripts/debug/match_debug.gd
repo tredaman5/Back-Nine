@@ -37,6 +37,7 @@ func _on_hole_started(hole: Hole) -> void:
 		player.ball,
 		hole.cup)
 	_hud.bind_match(_manager, hole)
+	_hud.bind_reader(player.get_node("GreenReader") as GreenReader)
 
 	(player.get_node("SwingController") as SwingController).swing_resolved.connect(_on_swing_resolved)
 	for golfer: Golfer in _manager.golfers:
