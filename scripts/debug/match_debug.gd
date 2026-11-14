@@ -17,6 +17,7 @@ func _ready() -> void:
 	_manager.hole_started.connect(_on_hole_started)
 	_manager.turn_started.connect(_on_turn_started)
 	_manager.match_finished.connect(_on_match_finished)
+	_manager.playoff_started.connect(_on_playoff_started)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -63,7 +64,14 @@ func _set_result(text: String) -> void:
 
 
 func _on_turn_started(golfer: Golfer) -> void:
-	_set_result("Hole %d: %s's shot" % [_manager.hole.hole_number, golfer.display_name])
+	if _manager.is_playoff:
+		_set_result("Playoff: %s's shot" % golfer.display_name)
+	else:
+		_set_result("Hole %d: %s's shot" % [_manager.hole.hole_number, golfer.display_name])
+
+
+func _on_playoff_started() -> void:
+	_set_result(_result + "\nMATCH TIED! Playoff: one shot each from the tee, closest to the pin wins.")
 
 
 func _on_swing_resolved(r: Dictionary) -> void:
@@ -110,5 +118,7 @@ func _on_match_finished(r: Dictionary) -> void:
 	var score: PackedStringArray = []
 	for golfer: Golfer in _manager.golfers:
 		score.append("%s %d" % [golfer.display_name, pts.get(golfer, 0)])
-	var text: String = "MATCH TIED (playoff comes later)" if r["tied"] else "%s WINS THE MATCH" % winner.display_name
+	var text: String = "%s WINS THE MATCH" % winner.display_name
+	if r["playoff"]:
+		text = "%s WINS THE PLAYOFF AND THE MATCH" % winner.display_name
 	_set_result("%s\n%s" % [text, "   ".join(score)])

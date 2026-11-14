@@ -6,7 +6,10 @@ extends Node
 
 signal turn_started(golfer: Golfer)
 signal hole_started(hole: Hole)
-## result: {winner (Golfer or null), tied (bool), points: {Golfer: int}}
+## Points were level after the last hole, so a closest-to-the-pin playoff begins.
+signal playoff_started
+## result: {winner (Golfer or null), tied (bool), points: {Golfer: int}, playoff (bool),
+## playoff_distances: {Golfer: float}}. Winners are never null once the playoff is over.
 signal match_finished(result: Dictionary)
 
 const TEE_DROP: Vector3 = Vector3(0.0, 0.25, 0.0)
@@ -17,6 +20,8 @@ const OOB_DELAY: float = 1.5
 ## Pause after a hole is finished before the next hole is set up.
 const HOLE_END_DELAY: float = 3.0
 const MATCH_END_DELAY: float = 8.0
+## Playoff shots closer together than this (yards) count as level, and the playoff is shot again.
+const PLAYOFF_LEVEL: float = 0.05
 
 @export var ball_scene: PackedScene
 ## The holes of the match, in order.
@@ -31,6 +36,10 @@ var hole: Hole
 var hole_index: int = 0
 var golfers: Array[Golfer] = []
 var active: Golfer
+## True while the closest-to-the-pin playoff is being shot (MatchScorer is not used then).
+var is_playoff: bool = false
+## Playoff: how far each golfer's ball finished from the pin. Out of bounds is INF.
+var playoff_distances: Dictionary[Golfer, float] = {}
 
 @onready var scorer: MatchScorer = $MatchScorer
 
@@ -55,6 +64,7 @@ func _ready() -> void:
 		golfer.bind_match(self)
 		golfer.shot_taken.connect(_on_shot_taken)
 		ball.ball_stopped.connect(_on_ball_stopped.bind(golfer))
+		ball.ball_landed.connect(_on_ball_landed)
 
 	scorer.golfer_conceded.connect(_on_golfer_conceded)
 	await get_tree().process_frame
@@ -69,14 +79,16 @@ func start_match() -> void:
 
 ## Replay the current hole from the tee (strokes for the hole reset).
 func restart_hole() -> void:
-	_begin_hole(hole_index)
+	_begin_hole(hole_index, is_playoff)
 
 
-func _begin_hole(index: int) -> void:
+func _begin_hole(index: int, playoff: bool = false) -> void:
 	_turn_id += 1
 	var id: int = _turn_id
 	_shot_pending = false
 	active = null
+	is_playoff = playoff
+	playoff_distances.clear()
 	hole_index = index
 	_load_hole(index)
 
@@ -98,9 +110,13 @@ func _begin_hole(index: int) -> void:
 		if i >= 1 and not still_in_cup:
 			break
 	hole.cup.reset()
-	scorer.begin_hole(hole, golfers)
+	if not playoff:
+		scorer.begin_hole(hole, golfers)
 	hole_started.emit(hole)
-	_next_turn()
+	if playoff:
+		_next_playoff_turn()
+	else:
+		_next_turn()
 
 
 ## Swap in the scene for hole `index` (the same hole is reused when replaying it).
@@ -167,8 +183,18 @@ func _finish_match() -> void:
 		elif pts == best:
 			tied = true
 	if tied:
-		winner = null
-	match_finished.emit({"winner": winner, "tied": tied, "points": scorer.points.duplicate()})
+		_start_playoff()
+		return
+	_end_match(winner)
+
+
+func _end_match(winner: Golfer) -> void:
+	var distances: Dictionary[Golfer, float] = playoff_distances.duplicate()
+	match_finished.emit({
+		"winner": winner, "tied": false, "points": scorer.points.duplicate(),
+		"playoff": is_playoff, "playoff_distances": distances,
+	})
+	is_playoff = false
 	if loop_for_testing:
 		var id: int = _turn_id
 		await get_tree().create_timer(MATCH_END_DELAY).timeout
@@ -176,11 +202,73 @@ func _finish_match() -> void:
 			start_match()
 
 
+## Points are level: each golfer takes one shot from the last hole's tee, closest to the pin wins.
+func _start_playoff() -> void:
+	playoff_started.emit()
+	var id: int = _turn_id
+	await get_tree().create_timer(HOLE_END_DELAY).timeout
+	if id != _turn_id:
+		return
+	_begin_hole(hole_scenes.size() - 1, true)
+
+
+func _next_playoff_turn() -> void:
+	_turn_id += 1
+	for golfer: Golfer in golfers:
+		if not playoff_distances.has(golfer):
+			active = golfer
+			golfer.rest_position = golfer.ball.global_position
+			turn_started.emit(golfer)
+			_camera.set_subject(golfer)
+			return
+	_resolve_playoff()
+
+
+func _resolve_playoff() -> void:
+	active = null
+	var best: float = INF
+	var winner: Golfer = null
+	var level: bool = false
+	for golfer: Golfer in golfers:
+		var d: float = playoff_distances[golfer]
+		if winner == null:
+			best = d
+			winner = golfer
+		elif is_inf(d) and is_inf(best):
+			level = true
+		elif d < best - PLAYOFF_LEVEL:
+			best = d
+			winner = golfer
+			level = false
+		elif absf(d - best) <= PLAYOFF_LEVEL:
+			level = true
+	var id: int = _turn_id
+	await get_tree().create_timer(HOLE_END_DELAY).timeout
+	if id != _turn_id:
+		return
+	if level:
+		# Dead level: shoot the playoff again.
+		playoff_started.emit()
+		_begin_hole(hole_scenes.size() - 1, true)
+	else:
+		_end_match(winner)
+
+
+## Is this golfer finished with the hole? (The scorer is not used in the playoff.)
+func _is_done(golfer: Golfer) -> bool:
+	return false if is_playoff else scorer.is_done(golfer)
+
+
 func _end_shot(golfer: Golfer, delay: float) -> void:
 	_shot_pending = false
 	var id: int = _turn_id
 	await get_tree().create_timer(delay).timeout
 	if id != _turn_id:
+		return
+	if is_playoff:
+		if not playoff_distances.has(golfer):
+			playoff_distances[golfer] = hole.distance_to_pin(golfer.ball.global_position)
+		_next_playoff_turn()
 		return
 	scorer.resolve_shot(golfer)
 	_next_turn()
@@ -199,17 +287,33 @@ func _on_shot_taken(golfer: Golfer) -> void:
 
 
 func _on_ball_stopped(golfer: Golfer) -> void:
-	if golfer != active or not _shot_pending or scorer.is_done(golfer):
+	if golfer != active or not _shot_pending or _is_done(golfer):
 		return
 	_end_shot(golfer, SHOT_END_DELAY)
+
+
+func _on_ball_landed(surface: StringName) -> void:
+	# Sand and rough make a duller, quieter landing than the fairway or green.
+	_play_sfx(&"land", -8.0 if surface == &"sand" or surface == &"rough" else -3.0)
+
+
+## Play a sound through the AudioManager autoload (looked up at runtime so scripts still compile
+## in tools that run without autoloads).
+func _play_sfx(sfx: StringName, volume_db: float = 0.0) -> void:
+	var audio: Node = get_node_or_null(^"/root/AudioManager")
+	if audio != null:
+		audio.call(&"play_sfx", sfx, volume_db)
 
 
 func _on_ball_holed() -> void:
 	var golfer: Golfer = _golfer_of(hole.cup.last_ball)
 	if golfer == null:
 		return
+	_play_sfx(&"cup")
 	_remove_ball(golfer)
 	if golfer == active and _shot_pending:
+		if is_playoff:
+			playoff_distances[golfer] = 0.0
 		_end_shot(golfer, HOLED_DELAY)
 
 
@@ -230,6 +334,14 @@ func _on_out_of_bounds() -> void:
 		return
 	_shot_pending = false
 	var id: int = _turn_id
+	if is_playoff:
+		# Out of bounds is the worst possible playoff result: no replay, no penalty stroke.
+		playoff_distances[golfer] = INF
+		await get_tree().create_timer(OOB_DELAY).timeout
+		if id == _turn_id:
+			_remove_ball(golfer)
+			_next_playoff_turn()
+		return
 	await get_tree().create_timer(OOB_DELAY).timeout
 	if id != _turn_id:
 		return

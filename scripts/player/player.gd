@@ -11,6 +11,7 @@ extends Golfer
 func _ready() -> void:
 	_swing.shot_taken.connect(_on_swing_shot_taken)
 	_input.club_changed.connect(_on_club_changed)
+	_swing.state_changed.connect(_on_swing_state_changed)
 
 
 func set_ball(new_ball: BallPhysics) -> void:
@@ -46,7 +47,16 @@ func end_turn() -> void:
 
 func _on_swing_shot_taken(_node: Node) -> void:
 	_reader.hide_grid()
+	show_swing()
 	shot_taken.emit(self)
+
+
+# Raise the club while the accuracy marker is sweeping; drop it if the swing is cancelled.
+func _on_swing_state_changed(state: SwingController.State) -> void:
+	if state == SwingController.State.ACCURACY:
+		show_backswing()
+	elif state == SwingController.State.IDLE and body != null:
+		body.play_anim(&"idle")
 
 
 func _on_club_changed(club: Club) -> void:

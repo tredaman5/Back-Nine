@@ -1,17 +1,27 @@
 class_name OpponentAI
 extends Node
-## Plans and takes the boss's shots: picks a club and aim, then adds random error.
-## This is the first version (distance-based club pick, random aim/power error). It will be
-## replaced by the shared shot planner that Bo's Caddie Call also uses.
+## Takes the boss's shots. ShotPlanner decides the clean shot (club, power, aim, and the break of a
+## putt); this class adds random error set by the boss's skill and then swings.
 
 signal shot_taken(golfer: Node)
+## The boss raises the club, a moment before the swing.
+signal backswing_started
 
 ## Seconds the boss "thinks" before swinging, so the camera can show the setup.
 @export var think_time: float = 1.2
-## Aim error on full shots, standard deviation in degrees. Putts use a quarter of it.
-@export var aim_error_deg: float = 2.0
-## Power error, standard deviation as a fraction of full power.
-@export var power_error: float = 0.03
+## 0 = sloppy, 1 = nearly perfect. Sets the random aim and power error.
+@export_range(0.0, 1.0) var skill: float = 0.5
+## How much of the green's slope the boss reads: 0 = ignores it, 1 = reads it fully.
+@export_range(0.0, 1.0) var green_reading: float = 0.5
+
+## Aim error on full shots, standard deviation in degrees, for the worst and best skill.
+const AIM_ERROR_WORST: float = 5.0
+const AIM_ERROR_BEST: float = 0.5
+## Power error (fraction of full power), standard deviation, for the worst and best skill.
+const POWER_ERROR_WORST: float = 0.08
+const POWER_ERROR_BEST: float = 0.01
+## Putts use this fraction of the full-shot aim error.
+const PUTT_AIM_FACTOR: float = 0.25
 
 var club: Club
 var power: float = 0.0
@@ -36,53 +46,25 @@ func take_turn(hole: Hole) -> void:
 	_hole = hole
 	_token += 1
 	var token: int = _token
-	_plan()
-	await get_tree().create_timer(think_time).timeout
+	var plan: ShotPlan = ShotPlanner.plan(_ball.global_position, _ball.current_surface(), _hole, _bag, green_reading)
+	club = plan.club
+	power = plan.power
+	aim_direction = plan.aim_direction
+	await get_tree().create_timer(think_time * 0.6).timeout
+	if token != _token:
+		return
+	backswing_started.emit()
+	await get_tree().create_timer(think_time * 0.4).timeout
 	if token != _token:
 		return
 	_execute()
 
 
-func _plan() -> void:
-	var to_pin: Vector3 = _hole.pin_position() - _ball.global_position
-	to_pin.y = 0.0
-	var dist: float = to_pin.length()
-	aim_direction = to_pin.normalized() if dist > 0.01 else Vector3(0.0, 0.0, -1.0)
-	var surface: StringName = _ball.current_surface()
-
-	if surface == &"green":
-		club = _putter()
-		power = clampf(dist / club.putt_range_yards, 0.05, 1.0)
-		return
-
-	var lie: float = SwingController.LIE_POWER.get(surface, 1.0)
-	club = _pick_flight_club(dist, lie)
-	power = clampf(dist / (club.carry_yards * lie), 0.1, 1.0)
-
-
-## The shortest flight club that reaches the pin from this lie, or the longest club if none does.
-func _pick_flight_club(dist: float, lie: float) -> Club:
-	var longest: Club = null
-	for i: int in range(_bag.size() - 1, -1, -1):
-		var c: Club = _bag[i]
-		if c.is_putter:
-			continue
-		if c.carry_yards * lie >= dist:
-			return c
-		longest = c
-	return longest
-
-
-func _putter() -> Club:
-	for c: Club in _bag:
-		if c.is_putter:
-			return c
-	return _bag[0]
-
-
 func _execute() -> void:
-	var yaw_error: float = randfn(0.0, aim_error_deg * (0.25 if club.is_putter else 1.0))
+	var aim_error: float = lerpf(AIM_ERROR_WORST, AIM_ERROR_BEST, skill) * (PUTT_AIM_FACTOR if club.is_putter else 1.0)
+	var yaw_error: float = randfn(0.0, aim_error)
 	var dir: Vector3 = aim_direction.rotated(Vector3.UP, deg_to_rad(yaw_error))
+	var power_error: float = lerpf(POWER_ERROR_WORST, POWER_ERROR_BEST, skill)
 	var shot_power: float = clampf(power + randfn(0.0, power_error), 0.05, 1.0)
 	var surface: StringName = _ball.current_surface()
 	var speed: float

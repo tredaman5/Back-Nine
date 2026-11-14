@@ -1,24 +1,19 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/opponent/opponent.gd" id="1_opp"]
 [ext_resource type="Script" path="res://scripts/opponent/opponent_ai.gd" id="2_ai"]
-
-[sub_resource type="CapsuleMesh" id="Mesh_body"]
-radius = 0.3
-height = 1.8
-
-[sub_resource type="StandardMaterial3D" id="Mat_body"]
-albedo_color = Color(0.85, 0.2, 0.2, 1)
+[ext_resource type="Script" path="res://scripts/golfer/golfer_body.gd" id="3_body"]
 
 [node name="Opponent" type="Node3D" groups=["boss", "golfer"]]
 script = ExtResource("1_opp")
 display_name = "Rex"
 stand_side = -1.0
 
-[node name="Body" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-mesh = SubResource("Mesh_body")
-surface_material_override/0 = SubResource("Mat_body")
+[node name="Body" type="Node3D" parent="."]
+script = ExtResource("3_body")
+shirt_color = Color(0.85, 0.2, 0.2, 1)
 
 [node name="OpponentAI" type="Node" parent="."]
 script = ExtResource("2_ai")
+skill = 0.45
+green_reading = 0.6

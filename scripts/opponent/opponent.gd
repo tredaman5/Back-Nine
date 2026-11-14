@@ -7,6 +7,7 @@ extends Golfer
 
 func _ready() -> void:
 	_ai.shot_taken.connect(_on_ai_shot_taken)
+	_ai.backswing_started.connect(show_backswing)
 
 
 func set_ball(new_ball: BallPhysics) -> void:
@@ -27,4 +28,5 @@ func begin_turn() -> void:
 
 
 func _on_ai_shot_taken(_node: Node) -> void:
+	show_swing()
 	shot_taken.emit(self)

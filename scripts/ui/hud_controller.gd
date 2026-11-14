@@ -87,9 +87,12 @@ func _update_match(hole: Hole) -> void:
 	_score_right.text = "%d  %s" % [scorer.points.get(golfers[1], 0), golfers[1].display_name.to_upper()]
 	_score_left.add_theme_color_override("font_color", GOLFER_COLORS[0])
 	_score_right.add_theme_color_override("font_color", GOLFER_COLORS[1])
-	_hole_label.text = "HOLE %d / %d   -   %.0f yd   -   %d pt%s" % [
-		hole.hole_number, _manager.hole_scenes.size(),
-		hole.distance_to_pin(hole.tee_position()), hole.points, "" if hole.points == 1 else "s"]
+	if _manager.is_playoff:
+		_hole_label.text = "PLAYOFF   -   closest to the pin   -   %.0f yd" % hole.distance_to_pin(hole.tee_position())
+	else:
+		_hole_label.text = "HOLE %d / %d   -   %.0f yd   -   %d pt%s" % [
+			hole.hole_number, _manager.hole_scenes.size(),
+			hole.distance_to_pin(hole.tee_position()), hole.points, "" if hole.points == 1 else "s"]
 	_turn_label.text = "%s's turn" % _manager.active.display_name if _manager.active != null else ""
 
 	# This hole: strokes and distance, with a marker on the golfer whose turn it is.
@@ -97,6 +100,15 @@ func _update_match(hole: Hole) -> void:
 	for i: int in mini(golfers.size(), rows.size()):
 		var golfer: Golfer = golfers[i]
 		var status: String
+		if _manager.is_playoff:
+			var marker_p: String = ">" if golfer == _manager.active else " "
+			var shot: String = "waiting"
+			if _manager.playoff_distances.has(golfer):
+				var d: float = _manager.playoff_distances[golfer]
+				shot = "out of bounds" if is_inf(d) else ("in the cup!" if d <= 0.0 else "%.1f yd from the pin" % d)
+			rows[i].text = "%s %s     %s" % [marker_p, golfer.display_name, shot]
+			rows[i].add_theme_color_override("font_color", GOLFER_COLORS[i % GOLFER_COLORS.size()])
+			continue
 		if scorer.is_holed(golfer):
 			status = "holed"
 		elif scorer.is_conceded(golfer):
