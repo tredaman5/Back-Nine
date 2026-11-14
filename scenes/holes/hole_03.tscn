@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=40 format=3]
 
 [ext_resource type="Script" path="res://scripts/hole/cup_detector.gd" id="1_cup"]
 [ext_resource type="Script" path="res://scripts/hole/oob_detector.gd" id="2_oob"]
@@ -25,17 +25,23 @@ albedo_color = Color(0.9, 0.15, 0.15, 1)
 [sub_resource type="StandardMaterial3D" id="Mat_tee"]
 albedo_color = Color(0.2, 0.4, 0.95, 1)
 
+[sub_resource type="StandardMaterial3D" id="Mat_sand"]
+albedo_color = Color(0.87, 0.78, 0.5, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_water"]
+albedo_color = Color(0.15, 0.4, 0.8, 1)
+
 [sub_resource type="BoxMesh" id="Mesh_rough"]
-size = Vector3(160, 1, 420)
+size = Vector3(160, 1, 460.0)
 
 [sub_resource type="BoxShape3D" id="Shape_rough"]
-size = Vector3(160, 1, 420)
+size = Vector3(160, 1, 460.0)
 
 [sub_resource type="BoxMesh" id="Mesh_fairway"]
-size = Vector3(36, 0.1, 260)
+size = Vector3(40.0, 0.1, 316.0)
 
 [sub_resource type="BoxShape3D" id="Shape_fairway"]
-size = Vector3(36, 0.1, 260)
+size = Vector3(40.0, 0.1, 316.0)
 
 [sub_resource type="CylinderMesh" id="Mesh_green"]
 top_radius = 14.0
@@ -70,15 +76,44 @@ size = Vector3(1, 0.04, 1)
 [sub_resource type="BoxShape3D" id="Shape_oob"]
 size = Vector3(800, 2, 900)
 
-[node name="HoleTest" type="Node3D"]
+[sub_resource type="CylinderMesh" id="Mesh_bunker1"]
+top_radius = 5.0
+bottom_radius = 5.0
+height = 0.1
+radial_segments = 32
+
+[sub_resource type="CylinderShape3D" id="Shape_bunker1"]
+height = 0.1
+radius = 5.0
+
+[sub_resource type="CylinderMesh" id="Mesh_bunker2"]
+top_radius = 6.0
+bottom_radius = 6.0
+height = 0.1
+radial_segments = 32
+
+[sub_resource type="CylinderShape3D" id="Shape_bunker2"]
+height = 0.1
+radius = 6.0
+
+[sub_resource type="BoxMesh" id="Mesh_pond1"]
+size = Vector3(24.0, 0.05, 80.0)
+
+[sub_resource type="BoxShape3D" id="Shape_pond1"]
+size = Vector3(24.0, 3, 80.0)
+
+[node name="Hole03" type="Node3D"]
 script = ExtResource("3_hole")
-points = 1
-hole_number = 1
+points = 2
+hole_number = 3
+green_radius = 14.0
+slope_base = Vector2(0.25, -0.18)
+slope_swirl = 0.4
 
 [node name="Terrain" type="Node3D" parent="."]
 
 [node name="Rough" type="StaticBody3D" parent="Terrain"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -125)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -160.0)
 metadata/surface = "rough"
 
 [node name="Mesh" type="MeshInstance3D" parent="Terrain/Rough"]
@@ -89,7 +124,7 @@ surface_material_override/0 = SubResource("Mat_rough")
 shape = SubResource("Shape_rough")
 
 [node name="Fairway" type="StaticBody3D" parent="Terrain"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, -120)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, -148.0)
 metadata/surface = "fairway"
 
 [node name="Mesh" type="MeshInstance3D" parent="Terrain/Fairway"]
@@ -100,7 +135,7 @@ surface_material_override/0 = SubResource("Mat_fairway")
 shape = SubResource("Shape_fairway")
 
 [node name="Green" type="StaticBody3D" parent="Terrain"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01, -265)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01, -320.0)
 metadata/surface = "green"
 
 [node name="Mesh" type="MeshInstance3D" parent="Terrain/Green"]
@@ -110,6 +145,33 @@ surface_material_override/0 = SubResource("Mat_green")
 [node name="Collision" type="CollisionShape3D" parent="Terrain/Green"]
 shape = SubResource("Shape_green")
 
+[node name="Bunker1" type="StaticBody3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.0, -0.02, -122.0)
+metadata/surface = "sand"
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/Bunker1"]
+mesh = SubResource("Mesh_bunker1")
+surface_material_override/0 = SubResource("Mat_sand")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/Bunker1"]
+shape = SubResource("Shape_bunker1")
+
+[node name="Bunker2" type="StaticBody3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.0, -0.02, -302.0)
+metadata/surface = "sand"
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/Bunker2"]
+mesh = SubResource("Mesh_bunker2")
+surface_material_override/0 = SubResource("Mat_sand")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/Bunker2"]
+shape = SubResource("Shape_bunker2")
+
+[node name="Pond1" type="MeshInstance3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.0, 0.03, -190.0)
+mesh = SubResource("Mesh_pond1")
+surface_material_override/0 = SubResource("Mat_water")
+
 [node name="Tee" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 
@@ -118,7 +180,7 @@ mesh = SubResource("Mesh_tee")
 surface_material_override/0 = SubResource("Mat_tee")
 
 [node name="Cup" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, -265)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, -320.0)
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("1_cup")
@@ -132,7 +194,7 @@ mesh = SubResource("Mesh_cup")
 surface_material_override/0 = SubResource("Mat_cup")
 
 [node name="Flagstick" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, -265)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, -320.0)
 
 [node name="Pole" type="MeshInstance3D" parent="Flagstick"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
@@ -145,10 +207,15 @@ mesh = SubResource("Mesh_flag")
 surface_material_override/0 = SubResource("Mat_flag")
 
 [node name="OutOfBounds" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6, -125)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6, -160.0)
 collision_layer = 0
 collision_mask = 2
 script = ExtResource("2_oob")
 
 [node name="Collision" type="CollisionShape3D" parent="OutOfBounds"]
 shape = SubResource("Shape_oob")
+
+[node name="Pond1Shape" type="CollisionShape3D" parent="OutOfBounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.0, 7.5, -30.0)
+shape = SubResource("Shape_pond1")
+

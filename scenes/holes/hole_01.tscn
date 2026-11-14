@@ -1,0 +1,154 @@
+[gd_scene load_steps=24 format=3]
+
+[ext_resource type="Script" path="res://scripts/hole/cup_detector.gd" id="1_cup"]
+[ext_resource type="Script" path="res://scripts/hole/oob_detector.gd" id="2_oob"]
+[ext_resource type="Script" path="res://scripts/hole/hole.gd" id="3_hole"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_rough"]
+albedo_color = Color(0.22, 0.42, 0.18, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_fairway"]
+albedo_color = Color(0.36, 0.66, 0.26, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_green"]
+albedo_color = Color(0.5, 0.85, 0.4, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_cup"]
+albedo_color = Color(0.03, 0.03, 0.03, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_pole"]
+albedo_color = Color(0.95, 0.95, 0.95, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_flag"]
+albedo_color = Color(0.9, 0.15, 0.15, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_tee"]
+albedo_color = Color(0.2, 0.4, 0.95, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_rough"]
+size = Vector3(160, 1, 420)
+
+[sub_resource type="BoxShape3D" id="Shape_rough"]
+size = Vector3(160, 1, 420)
+
+[sub_resource type="BoxMesh" id="Mesh_fairway"]
+size = Vector3(36, 0.1, 260)
+
+[sub_resource type="BoxShape3D" id="Shape_fairway"]
+size = Vector3(36, 0.1, 260)
+
+[sub_resource type="CylinderMesh" id="Mesh_green"]
+top_radius = 14.0
+bottom_radius = 14.0
+height = 0.1
+radial_segments = 48
+
+[sub_resource type="CylinderShape3D" id="Shape_green"]
+height = 0.1
+radius = 14.0
+
+[sub_resource type="CylinderMesh" id="Mesh_cup"]
+top_radius = 0.6
+bottom_radius = 0.6
+height = 0.02
+
+[sub_resource type="CylinderShape3D" id="Shape_cup"]
+height = 1.0
+radius = 0.6
+
+[sub_resource type="CylinderMesh" id="Mesh_pole"]
+top_radius = 0.04
+bottom_radius = 0.04
+height = 4.0
+
+[sub_resource type="BoxMesh" id="Mesh_flag"]
+size = Vector3(1.6, 0.8, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_tee"]
+size = Vector3(1, 0.04, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_oob"]
+size = Vector3(800, 2, 900)
+
+[node name="Hole01" type="Node3D"]
+script = ExtResource("3_hole")
+points = 1
+hole_number = 1
+
+[node name="Terrain" type="Node3D" parent="."]
+
+[node name="Rough" type="StaticBody3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -125)
+metadata/surface = "rough"
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/Rough"]
+mesh = SubResource("Mesh_rough")
+surface_material_override/0 = SubResource("Mat_rough")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/Rough"]
+shape = SubResource("Shape_rough")
+
+[node name="Fairway" type="StaticBody3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, -120)
+metadata/surface = "fairway"
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/Fairway"]
+mesh = SubResource("Mesh_fairway")
+surface_material_override/0 = SubResource("Mat_fairway")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/Fairway"]
+shape = SubResource("Shape_fairway")
+
+[node name="Green" type="StaticBody3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01, -265)
+metadata/surface = "green"
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/Green"]
+mesh = SubResource("Mesh_green")
+surface_material_override/0 = SubResource("Mat_green")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/Green"]
+shape = SubResource("Shape_green")
+
+[node name="Tee" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+
+[node name="TeeMarkerMesh" type="MeshInstance3D" parent="Tee"]
+mesh = SubResource("Mesh_tee")
+surface_material_override/0 = SubResource("Mat_tee")
+
+[node name="Cup" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, -265)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_cup")
+
+[node name="Collision" type="CollisionShape3D" parent="Cup"]
+shape = SubResource("Shape_cup")
+
+[node name="CupMesh" type="MeshInstance3D" parent="Cup"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.445, 0)
+mesh = SubResource("Mesh_cup")
+surface_material_override/0 = SubResource("Mat_cup")
+
+[node name="Flagstick" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, -265)
+
+[node name="Pole" type="MeshInstance3D" parent="Flagstick"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+mesh = SubResource("Mesh_pole")
+surface_material_override/0 = SubResource("Mat_pole")
+
+[node name="Flag" type="MeshInstance3D" parent="Flagstick"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 3.5, 0)
+mesh = SubResource("Mesh_flag")
+surface_material_override/0 = SubResource("Mat_flag")
+
+[node name="OutOfBounds" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6, -125)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("2_oob")
+
+[node name="Collision" type="CollisionShape3D" parent="OutOfBounds"]
+shape = SubResource("Shape_oob")

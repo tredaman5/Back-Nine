@@ -1,7 +1,7 @@
 extends Node
 ## TEMPORARY debug glue for the test course. Spawns the HUD, binds it to Dez, and writes shot
 ## results under the HUD. Replaced by the real match UI (scoring HUD) later.
-## R = restart the hole.
+## R = replay the current hole.
 
 @export var hud_scene: PackedScene
 @export var manager_path: NodePath
@@ -16,17 +16,26 @@ func _ready() -> void:
 	_manager = get_node(manager_path) as MatchManager
 	_manager.hole_started.connect(_on_hole_started)
 	_manager.turn_started.connect(_on_turn_started)
+	_manager.match_finished.connect(_on_match_finished)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key != null and key.pressed and not key.echo and key.physical_keycode == KEY_R:
-		_manager.start_hole()
+		_manager.restart_hole()
 
 
 func _on_hole_started(hole: Hole) -> void:
-	if _hud != null:
-		return
+	if _hud == null:
+		_setup_once()
+	# Each hole is a fresh scene, so listen to its cup and out-of-bounds area.
+	if not hole.cup.ball_holed.is_connected(_on_holed):
+		hole.cup.ball_holed.connect(_on_holed)
+		hole.oob.out_of_bounds.connect(_on_oob)
+	_set_result("Hole %d: %d yd, worth %d point%s" % [hole.hole_number, roundi(hole.distance_to_pin(hole.tee_position())), hole.points, "" if hole.points == 1 else "s"])
+
+
+func _setup_once() -> void:
 	var player := get_node(player_path) as Player
 	_hud = hud_scene.instantiate() as HUDController
 	add_child(_hud)
@@ -34,9 +43,8 @@ func _on_hole_started(hole: Hole) -> void:
 		player.get_node("PlayerInput") as PlayerInput,
 		player.get_node("ShotAim") as ShotAim,
 		player.get_node("SwingController") as SwingController,
-		player.ball,
-		hole.cup)
-	_hud.bind_match(_manager, hole)
+		player.ball)
+	_hud.bind_match(_manager)
 	_hud.bind_reader(player.get_node("GreenReader") as GreenReader)
 
 	(player.get_node("SwingController") as SwingController).swing_resolved.connect(_on_swing_resolved)
@@ -44,8 +52,6 @@ func _on_hole_started(hole: Hole) -> void:
 		golfer.shot_taken.connect(_on_shot_taken)
 		golfer.ball.ball_landed.connect(_on_landed.bind(golfer))
 		golfer.ball.ball_stopped.connect(_on_stopped.bind(golfer))
-	hole.cup.ball_holed.connect(_on_holed)
-	hole.oob.out_of_bounds.connect(_on_oob)
 	_manager.scorer.hole_finished.connect(_on_hole_finished)
 	_manager.scorer.golfer_conceded.connect(_on_conceded)
 
@@ -57,7 +63,7 @@ func _set_result(text: String) -> void:
 
 
 func _on_turn_started(golfer: Golfer) -> void:
-	_set_result("%s's shot" % golfer.display_name)
+	_set_result("Hole %d: %s's shot" % [_manager.hole.hole_number, golfer.display_name])
 
 
 func _on_swing_resolved(r: Dictionary) -> void:
@@ -96,3 +102,13 @@ func _on_hole_finished(r: Dictionary) -> void:
 	var winner: Golfer = r["winner"]
 	var text: String = "HOLE HALVED" if winner == null else "%s WINS THE HOLE (+%d)" % [winner.display_name, r["points"]]
 	_set_result(_result + "\n" + text)
+
+
+func _on_match_finished(r: Dictionary) -> void:
+	var winner: Golfer = r["winner"]
+	var pts: Dictionary = r["points"]
+	var score: PackedStringArray = []
+	for golfer: Golfer in _manager.golfers:
+		score.append("%s %d" % [golfer.display_name, pts.get(golfer, 0)])
+	var text: String = "MATCH TIED (playoff comes later)" if r["tied"] else "%s WINS THE MATCH" % winner.display_name
+	_set_result("%s\n%s" % [text, "   ".join(score)])

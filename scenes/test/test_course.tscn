@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://cm6ll7hrgt38d"]
 
-[ext_resource type="PackedScene" path="res://scenes/holes/hole_test.tscn" id="1_hole"]
+[ext_resource type="PackedScene" path="res://scenes/holes/hole_01.tscn" id="1_hole"]
+[ext_resource type="PackedScene" path="res://scenes/holes/hole_02.tscn" id="9_hole2"]
+[ext_resource type="PackedScene" path="res://scenes/holes/hole_03.tscn" id="10_hole3"]
 [ext_resource type="PackedScene" path="res://scenes/ball/ball.tscn" id="2_ball"]
 [ext_resource type="Script" uid="uid://d0rv054ce6l6v" path="res://scripts/debug/match_debug.gd" id="3_dbg"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="4_player"]
@@ -21,9 +23,6 @@ ambient_light_source = 3
 
 [node name="TestCourse" type="Node3D" unique_id=1825518978]
 
-[node name="Hole" parent="." unique_id=338828693 instance=ExtResource("1_hole")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0053201914, 1.1920929e-07, 0.0025305748)
-
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=922777027]
 environment = SubResource("Env_1")
 
@@ -40,7 +39,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 18)
 
 [node name="MatchManager" parent="." unique_id=391563001 instance=ExtResource("8_mm")]
 ball_scene = ExtResource("2_ball")
-hole_path = NodePath("../Hole")
+hole_scenes = Array[PackedScene]([ExtResource("1_hole"), ExtResource("9_hole2"), ExtResource("10_hole3")])
 camera_path = NodePath("../CameraRig")
 golfer_paths = Array[NodePath]([NodePath("../Player"), NodePath("../Opponent")])
 

@@ -25,9 +25,14 @@ var _conceded: Dictionary[Golfer, bool] = {}
 var _finished: bool = false
 
 
+## New match: everyone's points go back to zero.
+func reset_match() -> void:
+	points.clear()
+
+
 ## Start counting a fresh hole. Match points carry over between holes.
 func begin_hole(hole: Hole, golfers: Array[Golfer]) -> void:
-	if _hole != null:
+	if is_instance_valid(_hole):
 		_hole.cup.ball_holed.disconnect(_on_ball_holed)
 		_hole.oob.out_of_bounds.disconnect(_on_out_of_bounds)
 	_hole = hole
