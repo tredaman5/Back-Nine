@@ -11,6 +11,8 @@ signal putting_changed(putting: bool)
 const STAND_OFFSET: float = 1.4
 
 @export var display_name: String = "Golfer"
+## Which side of the ball the body stands on: 1 = right of the aim line, -1 = left.
+@export var stand_side: float = 1.0
 
 var ball: BallPhysics
 var hole: Hole
@@ -61,4 +63,4 @@ func _process(_delta: float) -> void:
 	to_pin.y = 0.0
 	var forward: Vector3 = to_pin.normalized() if to_pin.length() > 0.1 else Vector3(0.0, 0.0, -1.0)
 	var right: Vector3 = forward.cross(Vector3.UP)
-	global_position = ball.global_position - Vector3(0.0, 0.2, 0.0) + right * STAND_OFFSET
+	global_position = ball.global_position - Vector3(0.0, 0.2, 0.0) + right * STAND_OFFSET * stand_side

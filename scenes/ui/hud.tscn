@@ -1,72 +1,237 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud_controller.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/ui/swing_meter.gd" id="2_meter"]
 
+[sub_resource type="StyleBoxFlat" id="Panel_style"]
+bg_color = Color(0.04, 0.07, 0.1, 0.74)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 1, 1, 0.14)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="Toast_style"]
+bg_color = Color(0.04, 0.07, 0.1, 0.82)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.95, 0.8, 0.3, 0.9)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+
 [node name="HUD" type="CanvasLayer" groups=["ui"]]
 script = ExtResource("1_hud")
 
-[node name="Info" type="VBoxContainer" parent="."]
+[node name="ScoreBoard" type="PanelContainer" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -290.0
+offset_top = 10.0
+offset_right = 290.0
+offset_bottom = 78.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Panel_style")
+
+[node name="Row" type="HBoxContainer" parent="ScoreBoard"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ScoreLeft" type="Label" parent="ScoreBoard/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+text = "DEZ 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Center" type="VBoxContainer" parent="ScoreBoard/Row"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+alignment = 1
+
+[node name="HoleLabel" type="Label" parent="ScoreBoard/Row/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+text = "HOLE 1 / 3"
+horizontal_alignment = 1
+
+[node name="TurnLabel" type="Label" parent="ScoreBoard/Row/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.95, 0.8, 0.3, 1)
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 1
+
+[node name="ScoreRight" type="Label" parent="ScoreBoard/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 30
+text = "REX 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ToastPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -270.0
+offset_top = 88.0
+offset_right = 270.0
+offset_bottom = 120.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Toast_style")
+
+[node name="ResultLabel" type="Label" parent="ToastPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="HolePanel" type="PanelContainer" parent="."]
 offset_left = 16.0
-offset_top = 12.0
-offset_right = 520.0
-offset_bottom = 170.0
+offset_top = 10.0
+offset_right = 332.0
+offset_bottom = 100.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Panel_style")
+
+[node name="HoleBox" type="VBoxContainer" parent="HolePanel"]
+layout_mode = 2
 mouse_filter = 2
 
-[node name="ScoreLabel" type="Label" parent="Info"]
+[node name="HoleHeader" type="Label" parent="HolePanel/HoleBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.55)
+theme_override_font_sizes/font_size = 12
+text = "THIS HOLE"
+
+[node name="Row0" type="Label" parent="HolePanel/HoleBox"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
-text = "Score"
+theme_override_font_sizes/font_size = 17
 
-[node name="ReadsLabel" type="Label" parent="Info"]
+[node name="Row1" type="Label" parent="HolePanel/HoleBox"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
-text = "Green reads"
+theme_override_font_sizes/font_size = 17
 
-[node name="MatchLabel" type="Label" parent="Info"]
+[node name="ReadsPanel" type="PanelContainer" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -250.0
+offset_top = 10.0
+offset_right = -16.0
+offset_bottom = 70.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Panel_style")
+
+[node name="ReadsBox" type="VBoxContainer" parent="ReadsPanel"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ReadsHeader" type="Label" parent="ReadsPanel/ReadsBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.55)
+theme_override_font_sizes/font_size = 12
+text = "GREEN READS"
+
+[node name="ReadsLabel" type="Label" parent="ReadsPanel/ReadsBox"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
-text = "Match"
+theme_override_font_sizes/font_size = 17
+text = "3 / 3  (hold Shift)"
 
-[node name="ClubLabel" type="Label" parent="Info"]
+[node name="ShotPanel" type="PanelContainer" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -172.0
+offset_right = 330.0
+offset_bottom = -38.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Panel_style")
+
+[node name="ShotBox" type="VBoxContainer" parent="ShotPanel"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ClubLabel" type="Label" parent="ShotPanel/ShotBox"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
+theme_override_font_sizes/font_size = 19
 text = "Club"
 
-[node name="ShapeLabel" type="Label" parent="Info"]
+[node name="ShapeLabel" type="Label" parent="ShotPanel/ShotBox"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
+theme_override_font_sizes/font_size = 15
 text = "Shape"
 
-[node name="PowerLabel" type="Label" parent="Info"]
+[node name="PowerLabel" type="Label" parent="ShotPanel/ShotBox"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
+theme_override_font_sizes/font_size = 15
 text = "Power"
 
-[node name="DistanceLabel" type="Label" parent="Info"]
+[node name="DistanceLabel" type="Label" parent="ShotPanel/ShotBox"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
+theme_override_colors/font_color = Color(0.95, 0.8, 0.3, 1)
+theme_override_font_sizes/font_size = 17
 text = "To pin"
 
-[node name="ResultLabel" type="Label" parent="Info"]
-unique_name_in_owner = true
-layout_mode = 2
-mouse_filter = 2
-
 [node name="Hint" type="Label" parent="."]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = 680.0
-offset_right = 1260.0
-offset_bottom = 710.0
+offset_top = -30.0
+offset_right = -16.0
+offset_bottom = -6.0
+grow_vertical = 0
 mouse_filter = 2
-text = "Hold LMB + drag down: power. Release, then LMB: stop the marker in the green.   Q/E club   1-3 shape   mouse/arrows aim   Shift (hold): green read   R reset"
+theme_override_colors/font_color = Color(1, 1, 1, 0.6)
+theme_override_font_sizes/font_size = 12
+text = "Hold LMB + drag down: power. Release, then click: stop the marker in the green.   Q/E club   1-3 shape   mouse/arrows aim   Shift (hold): green read   R replay hole"
 
 [node name="SwingMeter" type="Control" parent="."]
 mouse_filter = 2
